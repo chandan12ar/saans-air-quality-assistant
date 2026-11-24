@@ -1,0 +1,14 @@
+node_modules
+.next
+coverage
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+next-env.d.ts
+.vercel
+*.mp4
+*.mov
+
+# local handoff notes (personal, not for the public repo)
+CONTEXT.md
