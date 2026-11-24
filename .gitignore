@@ -14,3 +14,6 @@ next-env.d.ts
 CONTEXT.md
 .claude/
 AGENTS.md
+
+playwright-report/
+test-results/

@@ -19,6 +19,14 @@ export function defaultPlanDeps(): PlanDeps {
   };
 }
 
-/** Plan requests call a paid/limited upstream, so they get a tighter budget than place search. */
-export const planLimiter = () => createRateLimiter({ limit: 8, windowMs: 60_000 });
-export const placesLimiter = () => createRateLimiter({ limit: 30, windowMs: 60_000 });
+/** Reads a positive integer from the environment, falling back to a default for anything else. */
+export function intFromEnv(value: string | undefined, fallback: number): number {
+  const n = Number(value);
+  return Number.isInteger(n) && n > 0 ? n : fallback;
+}
+
+/** Plan requests call a rate-limited upstream, so they get a tighter budget than place search. */
+export const planLimiter = () =>
+  createRateLimiter({ limit: intFromEnv(process.env.RATE_LIMIT_PLAN_PER_MIN, 10), windowMs: 60_000 });
+export const placesLimiter = () =>
+  createRateLimiter({ limit: intFromEnv(process.env.RATE_LIMIT_PLACES_PER_MIN, 30), windowMs: 60_000 });

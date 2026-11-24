@@ -54,6 +54,8 @@ Get a free key at [Google AI Studio](https://aistudio.google.com) and copy curre
 ```powershell
 npm run typecheck && npm run lint && npm test
 npm run test:coverage   # coverage report
+npx playwright install chromium   # once
+npm run test:e2e        # Playwright end-to-end + axe accessibility scans (builds and serves the app)
 npm run build
 npm run check:size      # repo size guard (event cap is 10 MB)
 ```
@@ -76,6 +78,10 @@ npm run check:size      # repo size guard (event cap is 10 MB)
 ## Accessibility
 
 Landmarks and a skip link, labelled form controls, visible focus, 44 px touch targets, `aria-live` status for async results, the AQI band always given as text plus a distinct shape (colour is never the only signal), a text description and data table for the hourly chart, native `<dialog>` for the AI trace, `lang` switching for Hindi, and reduced-motion support.
+
+## Accessibility testing
+
+`e2e/accessibility.spec.ts` runs axe-core (WCAG 2.0/2.1/2.2 A and AA plus best practice, including colour contrast) against the empty page, the full results view, expanded tables, the open AI-trace dialog, the Hindi interface, the error state and a 375 px phone viewport, and asserts there is no horizontal page scroll. A canary test confirms the scanner does flag a known violation, so a clean run is meaningful. `e2e/flow.spec.ts` covers the user journey: synthetic-day labelling, honest "AI unavailable" state, what-if toggles, clean-air and extreme-smog days, Hindi, keyboard-only use, focus management, the AI trace contents, input rejection and security headers. The e2e server runs without a Gemini key and on the synthetic smog day, so it needs no network or secrets. Automated scans catch only part of accessibility; manual screen-reader testing is still recommended.
 
 ## Tests
 
