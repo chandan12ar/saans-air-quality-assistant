@@ -35,6 +35,8 @@ const STRINGS = {
     peakWhy: "This is the most polluted hour of the day.",
     best: "Best hour for outdoor activity",
     bestWhy: "This is the cleanest daytime hour.",
+    move: (from: number, to: number) => `Move outdoor time from ${hhmm(from)} to ${hhmm(to)}`,
+    moveWhy: "The air is cleaner at the new time.",
     caveats: [
       "The AI assistant was unavailable, so this plan is rule-based and not personalised in wording.",
       "Estimates from modelled data, not medical advice. If anyone has trouble breathing, seek medical care.",
@@ -48,12 +50,16 @@ const STRINGS = {
     peakWhy: "यह दिन का सबसे प्रदूषित घंटा है।",
     best: "बाहर की गतिविधि के लिए सबसे अच्छा समय",
     bestWhy: "यह दिन का सबसे साफ़ घंटा है।",
+    move: (from: number, to: number) => `बाहर का समय ${hhmm(from)} से ${hhmm(to)} पर ले जाएँ`,
+    moveWhy: "उस समय हवा ज़्यादा साफ़ होती है।",
     caveats: [
       "AI सहायक उपलब्ध नहीं था, इसलिए यह नियम-आधारित योजना है।",
       "यह मॉडल के अनुमान हैं, चिकित्सीय सलाह नहीं। साँस लेने में दिक्कत हो तो डॉक्टर से मिलें।",
     ],
   },
 } as const;
+
+const hhmm = (h: number): string => `${String(h).padStart(2, "0")}:00`;
 
 const TIMELINE_ACTIONS: ActionId[] = ["shift_outdoor", "mask_unavoidable", "swap_commute"];
 const INDOOR_ACTIONS: ActionId[] = ["close_windows", "run_purifier", "diy_filter"];
@@ -100,7 +106,10 @@ export function buildFallbackPlan(args: {
   }
 
   const timeline: AiPlan["timeline"] = [];
-  timeline.push({ hour: bestHour, title: t.best, why: t.bestWhy, ...(has("shift_outdoor") ? { actionId: "shift_outdoor" as const } : {}) });
+  // Only suggest a different outdoor hour when the engine found one this household can actually use.
+  for (const move of applicable.find((a) => a.id === "shift_outdoor")?.moves ?? []) {
+    timeline.push({ hour: move.to, title: t.move(move.from, move.to), why: t.moveWhy, actionId: "shift_outdoor" });
+  }
   timeline.push({ hour: peakHour, title: t.peak, why: t.peakWhy, ...(has("close_windows") ? { actionId: "close_windows" as const } : {}) });
   for (const id of TIMELINE_ACTIONS.filter((a) => a !== "shift_outdoor" && has(a))) {
     timeline.push({ hour: id === "swap_commute" ? 8 : peakHour, title: TEXT[language][id].title, why: TEXT[language][id].how, actionId: id });

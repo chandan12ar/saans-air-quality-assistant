@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
-import { buildDefaultSlots, buildLedger, pm25ToAqi } from "@/engine";
+import { buildLedger, pm25ToAqi } from "@/engine";
 import { AirDataError, dayValues, simulatedDay, type HourlyForecast } from "./airQuality";
 import { BoundedTtlCache } from "./boundedCache";
+import { contextFor } from "./context";
 import { buildFallbackPlan } from "./fallbackPlan";
 import { buildGeminiInput, generateAiPlan, type GeminiCall, type GenerateResult } from "./gemini";
 import type { DaySummary, PlanResponse } from "./planTypes";
@@ -82,14 +83,7 @@ export async function buildPlan(request: PlanRequest, deps: PlanDeps): Promise<P
     }
   }
 
-  const { profile } = req;
-  const ledger = buildLedger({
-    outdoor: hourly,
-    slots: buildDefaultSlots(profile),
-    person: { ageBand: profile.ageBand },
-    home: { windows: profile.windows, purifierCadr: profile.purifierCadr, roomVolumeM3: profile.roomVolumeM3 },
-    commuteKm: profile.commuteKm,
-  });
+  const ledger = buildLedger(contextFor(req.profile, hourly));
 
   const input = buildGeminiInput({ request: req, date, simulated, hourly, ledger, notes });
   const allowedActions = new Set(ledger.actions.map((a) => a.id));

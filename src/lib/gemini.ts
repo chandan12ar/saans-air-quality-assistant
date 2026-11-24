@@ -17,7 +17,7 @@ OUTPUT RULES
 1. Return JSON matching the response schema. Write all text in the language given by "language" ("en" = English, "hi" = Hindi in Devanagari script).
 2. NEVER write impact figures. No percentages, no micrograms, no grams, no CO2 amounts, no "X times less". The server attaches verified impact for each actionId. You may use clock times (24-hour, e.g. 19:00) and AQI band names.
 3. Reference engine actions only through "actionId", and only ids listed in "availableActions". You may add general guidance without an actionId, but never invent an id.
-4. Use "hourlyPm25" (hour is 0-23, local time) to choose hours. Put the best and worst hours for this household in the timeline.
+4. Use "hourlyPm25" (hour is 0-23, local time) to choose hours. Put the worst hours for this household in the timeline. If an action has "moves", use exactly those from/to hours for it: the household's schedule limits when the move is possible. Never suggest outdoor time during hours the household is away at school or work.
 5. Tailor to the household: age band, respiratory condition, windows, purifier, commute, budget. If budget is "low", prefer free or low-cost options (routine changes, DIY filter) over purchases.
 6. If "cleanAirDay" is true, say the air is fine, keep the plan short, and do not manufacture alarm.
 7. Actions with "recommended": false are trade-offs that raise exposure; omit them or mention them only as an optional choice with the downside stated.
@@ -34,7 +34,7 @@ export interface GeminiInput {
   cleanAirDay: boolean;
   hourlyPm25: Array<{ hour: number; pm25: number; band: string }>;
   household: PlanRequest["profile"];
-  availableActions: Array<{ actionId: ActionId; recommended: boolean; engineNote: string }>;
+  availableActions: Array<{ actionId: ActionId; recommended: boolean; engineNote: string; moves?: Array<{ from: number; to: number }> }>;
   untrustedUserNotes: string | null;
 }
 
@@ -55,7 +55,12 @@ export function buildGeminiInput(args: {
     cleanAirDay: ledger.nothingToDo,
     hourlyPm25: hourly.map((v, hour) => ({ hour, pm25: Math.round(v), band: pm25ToAqi(v).band })),
     household: request.profile,
-    availableActions: ledger.actions.map((a) => ({ actionId: a.id, recommended: a.applied, engineNote: a.detail })),
+    availableActions: ledger.actions.map((a) => ({
+      actionId: a.id,
+      recommended: a.applied,
+      engineNote: a.detail,
+      ...(a.moves ? { moves: a.moves } : {}),
+    })),
     untrustedUserNotes: notes,
   };
 }

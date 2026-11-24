@@ -16,6 +16,8 @@ export interface ActionResult {
   home: Home;
   co2eAvoidedG?: number;
   detail: string;
+  /** For shift_outdoor: which hours the activity moves from and to (0-23). */
+  moves?: Array<{ from: number; to: number }>;
 }
 
 const hh = (h: number): string => `${String(h).padStart(2, "0")}:00`;
@@ -26,6 +28,7 @@ type ActionFn = (ctx: PlanContext) => ActionResult | null;
 const shiftOutdoor: ActionFn = (ctx) => {
   const slots = ctx.slots.map((s) => ({ ...s }));
   const moves: string[] = [];
+  const hourMoves: Array<{ from: number; to: number }> = [];
   const movable = slots
     .map((s, i) => ({ s, i }))
     .filter(({ s }) => s.place === "outdoor" && s.movable)
@@ -45,8 +48,9 @@ const shiftOutdoor: ActionFn = (ctx) => {
     slots[best] = { ...moved };
     slots[i] = { place: "home", activity: replaced.activity, windowsOpen: false };
     moves.push(`Move outdoor activity from ${hh(i)} (PM2.5 ${Math.round(at(ctx.outdoor, i))}) to ${hh(best)} (PM2.5 ${Math.round(at(ctx.outdoor, best))})`);
+    hourMoves.push({ from: i, to: best });
   }
-  return moves.length ? { slots, home: ctx.home, detail: moves.join("; ") } : null;
+  return moves.length ? { slots, home: ctx.home, detail: moves.join("; "), moves: hourMoves } : null;
 };
 
 const closeWindows: ActionFn = (ctx) => {

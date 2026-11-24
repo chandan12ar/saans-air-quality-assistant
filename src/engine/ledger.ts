@@ -38,6 +38,7 @@ export function buildLedger(base: PlanContext, enabled?: ReadonlySet<ActionId>):
         co2eAvoidedG: result.co2eAvoidedG,
         applied: central >= 0,
         detail: result.detail,
+        ...(result.moves ? { moves: result.moves } : {}),
       },
     });
   }

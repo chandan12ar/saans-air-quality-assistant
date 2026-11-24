@@ -51,6 +51,8 @@ export interface ActionEffect {
   /** True when the action is part of the recommended plan; false for opt-in trade-offs. */
   applied: boolean;
   detail: string;
+  /** shift_outdoor only: the hours the activity moves from and to. */
+  moves?: Array<{ from: number; to: number }>;
 }
 
 export interface Ledger {
