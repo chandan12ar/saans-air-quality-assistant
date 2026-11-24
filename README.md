@@ -49,7 +49,7 @@ npm run dev                    # http://localhost:3000
 
 Without a key the app still works: live air data and the exposure ledger are real, and the plan comes from the labelled rule-based fallback.
 
-Get a free key at [Google AI Studio](https://aistudio.google.com) and copy current model IDs from there. Never commit the key; `.env*` is git-ignored. On Vercel, set the same three variables in the project's Environment Variables.
+Get a free key at [Google AI Studio](https://aistudio.google.com) and copy current model IDs from there. Verified working on 24 Nov 2026: `GEMINI_MODEL=gemini-2.5-flash` (about 5 s per plan with thinking disabled) and `GEMINI_FALLBACK_MODEL=gemini-3.1-flash-lite`. Newer preview models returned HTTP 503 "high demand" at the time, which is exactly what the fallback chain is for. Never commit the key; `.env*` is git-ignored. On Vercel, set the same three variables in the project's Environment Variables.
 
 ```powershell
 npm run typecheck && npm run lint && npm test

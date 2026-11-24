@@ -13,3 +13,4 @@ next-env.d.ts
 # local handoff notes (personal, not for the public repo)
 CONTEXT.md
 .claude/
+AGENTS.md

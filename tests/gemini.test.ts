@@ -8,6 +8,7 @@ import {
   readGeminiConfig,
   renderUserContent,
   SYSTEM_INSTRUCTION,
+  thinkingConfigFor,
   type GeminiInput,
 } from "@/lib/gemini";
 import { HttpError, NOW, VALID_PLAN, demoRequest, okResult, scriptedGemini } from "./fixtures";
@@ -134,6 +135,30 @@ describe("generateAiPlan", () => {
     const r = await generateAiPlan({ input: INPUT, allowedActions: ALL, call: g.call, models: ["same", "same"], timeoutMs: 1000 });
     expect(r.ok).toBe(false);
     expect(g.requests).toHaveLength(1);
+  });
+});
+
+describe("thinkingConfigFor", () => {
+  it("disables thinking only for the 2.5 Flash family", () => {
+    expect(thinkingConfigFor("gemini-2.5-flash")).toEqual({ thinkingBudget: 0 });
+    expect(thinkingConfigFor("gemini-2.5-flash-lite")).toBeUndefined();
+    expect(thinkingConfigFor("gemini-3.1-flash-lite")).toBeUndefined();
+    expect(thinkingConfigFor("gemini-2.5-pro")).toBeUndefined();
+  });
+});
+
+describe("overall time budget", () => {
+  it("stops trying further models once the budget is spent", async () => {
+    let t = 0;
+    const g = scriptedGemini([{ text: "" }, okResult()]);
+    const call: typeof g.call = (req) => {
+      t += 50_000; // the first call "takes" 50 s, which spends the whole budget
+      return g.call(req);
+    };
+    const r = await generateAiPlan({ input: INPUT, allowedActions: ALL, call, models: ["a", "b"], timeoutMs: 1000, now: () => t });
+    expect(r.ok).toBe(false);
+    expect(g.requests).toHaveLength(1);
+    if (!r.ok) expect(r.failure.kind).toBe("empty");
   });
 });
 

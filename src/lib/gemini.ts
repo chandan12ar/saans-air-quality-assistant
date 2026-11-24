@@ -93,8 +93,18 @@ export interface GeminiRawResult {
 /** The only function that talks to Gemini. Injected so tests never touch the network. */
 export type GeminiCall = (req: GeminiRequest) => Promise<GeminiRawResult>;
 
+/**
+ * Gemini 2.5 Flash spends most of its latency "thinking" before structured output, and this task is
+ * constrained generation, not open reasoning, so thinking is switched off for that family.
+ * Other models are left on their defaults because the thinking parameters differ between generations.
+ */
+export function thinkingConfigFor(model: string): { thinkingBudget: number } | undefined {
+  return /^gemini-2\.5-flash(?!-lite)/.test(model) ? { thinkingBudget: 0 } : undefined;
+}
+
 export function createGeminiCall(apiKey: string): GeminiCall {
-  const ai = new GoogleGenAI({ apiKey });
+  // System instructions and responseJsonSchema require the v1beta surface.
+  const ai = new GoogleGenAI({ apiKey, httpOptions: { apiVersion: "v1beta" } });
   return async (req) => {
     const res = await ai.models.generateContent({
       model: req.model,
@@ -106,6 +116,7 @@ export function createGeminiCall(apiKey: string): GeminiCall {
         temperature: 0.4,
         maxOutputTokens: 8192,
         abortSignal: req.signal,
+        ...(thinkingConfigFor(req.model) ? { thinkingConfig: thinkingConfigFor(req.model) } : {}),
       },
     });
     const finish = res.candidates?.[0]?.finishReason;
@@ -139,6 +150,8 @@ export function classifyTransportError(err: unknown, timedOut: boolean): { kind:
   return { kind: "upstream_error", detail: status ? `HTTP ${status}: ${message}` : message };
 }
 
+const TOTAL_BUDGET_MS = 45_000;
+
 export type GenerateResult =
   | { ok: true; plan: AiPlan; model: string; latencyMs: number; trace: AiTrace }
   | { ok: false; failure: { kind: FailureKind; message: string }; trace: AiTrace };
@@ -159,8 +172,9 @@ export interface GenerateArgs {
  */
 export async function generateAiPlan(args: GenerateArgs): Promise<GenerateResult> {
   const { input, allowedActions, call, models } = args;
-  const timeoutMs = args.timeoutMs ?? 18_000;
+  const timeoutMs = args.timeoutMs ?? 25_000;
   const now = args.now ?? Date.now;
+  const startedAll = now();
   const attempts: AttemptTrace[] = [];
   const trace: AiTrace = { systemInstruction: SYSTEM_INSTRUCTION, input, attempts };
 
@@ -177,6 +191,8 @@ export async function generateAiPlan(args: GenerateArgs): Promise<GenerateResult
     let content = baseContent;
 
     for (let attempt = 0; attempt < maxTries; attempt++) {
+      // Keep the whole request inside the route's maxDuration: stop trying once the budget is spent.
+      if (now() - startedAll > TOTAL_BUDGET_MS) return fail(last);
       const started = now();
       const controller = new AbortController();
       let timedOut = false;
