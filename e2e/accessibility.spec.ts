@@ -3,7 +3,15 @@ import { expect, test, type Page } from "@playwright/test";
 
 const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa", "best-practice"];
 
+/** Contrast is only meaningful once entrance fades have finished (looping ambient animations are ignored). */
+export async function settle(page: Page) {
+  await page.waitForFunction(() =>
+    document.getAnimations().every((a) => a.effect?.getTiming().iterations === Infinity || a.playState !== "running"),
+  );
+}
+
 async function expectNoViolations(page: Page, label: string) {
+  await settle(page);
   const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
   const summary = results.violations.map((v) => `${v.id} (${v.impact}): ${v.help} -> ${v.nodes.map((n) => n.target.join(" ")).slice(0, 3).join(" | ")}`);
   expect(summary, `axe violations on ${label}`).toEqual([]);

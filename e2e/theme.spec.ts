@@ -69,6 +69,9 @@ test.describe("live sky", () => {
       expect(["good", "satisfactory", "moderate", "poor", "very_poor", "severe"]).toContain(themed);
       if (peak === 20) expect(themed).toBe("good");
       if (peak === 450) expect(["very_poor", "severe"]).toContain(themed);
+      await page.waitForFunction(() =>
+        document.getAnimations().every((a) => a.effect?.getTiming().iterations === Infinity || a.playState !== "running"),
+      );
       const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
       expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).slice(0, 2).join(" | ")}`)).toEqual([]);
     });
