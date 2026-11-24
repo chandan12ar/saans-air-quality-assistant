@@ -105,9 +105,9 @@ void main() {
   vec2 cell = (gl_FragCoord.xy + vec2(-uTime * 18.0, sin(uTime * 0.4) * 4.0)) / 22.0;
   vec2 id = floor(cell);
   vec2 dp = vec2(hash(id + 1.3), hash(id + 2.7));
-  float present = step(1.0 - haze * 0.32 - 0.03, hash(id));
-  float dust = (1.0 - smoothstep(0.0, 0.10, length(fract(cell) - dp))) * present;
-  col = mix(col, mix(vec3(1.0), vec3(0.28, 0.22, 0.17), haze), dust * mix(0.25, 0.45, haze));
+  float present = step(1.0 - haze * 0.42 - 0.03, hash(id));
+  float dust = (1.0 - smoothstep(0.0, mix(0.09, 0.13, haze), length(fract(cell) - dp))) * present;
+  col = mix(col, mix(vec3(1.0), vec3(0.24, 0.19, 0.15), haze), dust * mix(0.25, 0.5, haze));
 
   // Darken the top for legible white text, light vignette, fine grain against banding.
   col *= mix(0.70, 1.0, (1.0 - smoothstep(0.50, 1.0, uv.y)));

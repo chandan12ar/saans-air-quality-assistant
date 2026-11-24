@@ -74,6 +74,20 @@ a { color: inherit; }
 .story-step h2 { font-size: clamp(1.6rem, 3vw, 2.4rem); font-weight: 600; letter-spacing: -0.02em; text-shadow: 0 1px 18px rgba(0, 0, 0, 0.4); }
 .story-body { font-size: clamp(1.05rem, 1.5vw, 1.22rem); color: var(--text-2); max-width: 40ch; margin: 0.6rem auto 0; text-shadow: 0 1px 12px rgba(0, 0, 0, 0.5); }
 .story-statement { font-size: clamp(2rem, 4.6vw, 3.6rem) !important; max-width: 18ch; margin-inline: auto; letter-spacing: -0.03em !important; }
+/* the pinned air meter: one figure, driven by scroll */
+.meter { position: relative; height: 260vh; }
+.meter-anchor { position: absolute; left: 0; width: 1px; height: 1px; pointer-events: none; }
+.meter-sticky { position: sticky; top: 0; height: 100svh; display: grid; place-items: center; padding: 0 20px; overflow: clip; }
+.meter-scene { position: relative; text-align: center; width: min(640px, 100%); }
+.meter-scene::before { content: ""; position: absolute; inset: -18% -10%; z-index: -1; background: radial-gradient(closest-side, rgba(5, 11, 22, 0.45), transparent); }
+.meter-num { display: inline-flex; align-items: baseline; gap: 0.5rem; margin: 0; font-family: var(--display); font-weight: 200; font-size: clamp(6rem, 19vw, 13rem); line-height: 0.95; letter-spacing: -0.05em; font-variant-numeric: tabular-nums; text-shadow: 0 2px 40px rgba(0, 0, 0, 0.35); }
+.meter-num .unit { font-size: clamp(1rem, 2vw, 1.5rem); font-weight: 500; letter-spacing: 0; }
+.meter-label { font-family: var(--display); font-size: clamp(1.6rem, 3vw, 2.4rem); font-weight: 600; margin: 0.4rem 0 0; animation: swap 0.5s var(--ease-out) both; }
+.meter-scale { position: relative; height: 8px; border-radius: 4px; margin: 1.6rem auto 2.4rem; width: 100%; background: linear-gradient(90deg, #00b050 0%, #92d050 15%, #ffff00 30%, #ff9900 40%, #ff0000 62%, #c00000 90%); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25); }
+.meter-scale i { position: absolute; top: 16px; transform: translateX(-50%); font-style: normal; font-size: 0.8rem; color: var(--text-2); white-space: nowrap; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6); }
+.meter-dot { position: absolute; top: 50%; left: 5%; width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 3px solid #0d1b2e; transform: translate(-50%, -50%); box-shadow: 0 0 16px rgba(255, 255, 255, 0.6); }
+.meter-body { max-width: 40ch; min-height: 5em; margin: 0 auto; font-size: clamp(1.02rem, 1.4vw, 1.18rem); color: var(--text-2); text-shadow: 0 1px 12px rgba(0, 0, 0, 0.5); animation: swap 0.5s var(--ease-out) both; }
+@keyframes swap { from { opacity: 0; transform: translateY(8px); } }
 .reveal { opacity: 0; transform: translateY(32px) scale(0.98); transition: opacity 0.9s var(--ease-out), transform 0.9s var(--ease-out); }
 .reveal.in { opacity: 1; transform: none; }
 
@@ -176,7 +190,10 @@ label { display: block; font-weight: 600; font-size: 0.95rem; margin-bottom: 0.3
 }
 .cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; margin-top: 14px; align-items: start; }
 @media (min-width: 820px) { .cols { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.col { display: grid; gap: 14px; align-content: start; min-width: 0; }
+.col { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-content: start; min-width: 0; }
+.card { min-width: 0; overflow-wrap: anywhere; }
+.card table { table-layout: fixed; }
+.card td, .card th { word-break: break-word; }
 .grid > .card, .col > .card { animation: rise 0.7s var(--ease-out) both; }
 .grid > .card:nth-child(2) { animation-delay: 0.05s; }
 .grid > .card:nth-child(3) { animation-delay: 0.1s; }
@@ -277,6 +294,7 @@ pre { background: #07111f; color: #e6eef8; padding: 0.8rem; border-radius: 12px;
   .breath, .scroll-hint svg, .skeleton span { animation: none; }
   .hero > *, .results, .grid > .card, .col > .card { animation: fade 0.3s ease both; }
   .reveal { transform: none; transition: opacity 0.4s ease; }
+  .meter-label, .meter-body { animation: fade 0.3s ease both; }
   .btn, .chip-opt label, .toggle input::before, .track .fill, .mini div { transition: none; }
 }
 @keyframes fade { from { opacity: 0; } }
