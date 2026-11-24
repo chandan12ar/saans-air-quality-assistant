@@ -44,6 +44,7 @@ export interface AiTrace {
 
 export interface DaySummary {
   date: string;
+  minPm25: number;
   meanPm25: number;
   maxPm25: number;
   band: NaqiBand;

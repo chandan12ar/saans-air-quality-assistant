@@ -35,7 +35,13 @@ const ATTRIBUTION_SIM = "Synthetic smog day generated for demonstration. Not rea
 
 function summarise(date: string, hourly: readonly number[]): DaySummary {
   const mean = hourly.reduce((a, b) => a + b, 0) / hourly.length;
-  return { date, meanPm25: Math.round(mean), maxPm25: Math.round(Math.max(...hourly)), band: pm25ToAqi(mean).band };
+  return {
+    date,
+    minPm25: Math.round(Math.min(...hourly)),
+    meanPm25: Math.round(mean),
+    maxPm25: Math.round(Math.max(...hourly)),
+    band: pm25ToAqi(mean).band,
+  };
 }
 
 function airFailure(err: unknown): PlanError {

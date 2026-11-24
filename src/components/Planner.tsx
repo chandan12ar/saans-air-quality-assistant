@@ -1,18 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BAND_LABEL, type Language } from "@/lib/labels";
+import type { Language } from "@/lib/labels";
 import type { PlanResponse } from "@/lib/planTypes";
 import { ProfileSchema, type Profile } from "@/lib/schemas";
-import { airStateFor, type AirState } from "./airTheme";
-import { AirScene } from "./AirScene";
-import { ForecastView } from "./ForecastView";
+import { airStateFor, hazeForPm25, sky, STORY_SKY, type AirState } from "./airTheme";
+import { ChipGroup } from "./Choice";
 import { HouseholdForm } from "./HouseholdForm";
 import { INITIAL_FORM, toRequest, type FormState } from "./formState";
 import { makeTranslator } from "./i18n";
+import { Icon } from "./Icon";
 import { LedgerPanel } from "./LedgerPanel";
-import { PlanView } from "./PlanView";
-import { ResultBanner } from "./ResultBanner";
+import { CommunityCard, IndoorCard, PlanCard, SwapsCard } from "./PlanView";
+import { AqiCard, DaysCard, dayLabel, HourlyCard, NowHeader, ShareCard } from "./ResultCards";
+import { Sky } from "./Sky";
+import { Story } from "./Story";
 
 interface Snapshot {
   id: number;
@@ -39,16 +41,20 @@ export function Planner() {
   const t = useMemo(() => makeTranslator(form.language), [form.language]);
   const setForm = useCallback((updater: (prev: FormState) => FormState) => setFormState(updater), []);
 
-  // The whole page takes its colours from the air in the latest plan.
-  const sky = useMemo(() => (snapshot ? airStateFor(snapshot.result.hourly) : null), [snapshot]);
-  const air: AirState = sky?.air ?? "idle";
+  const air = useMemo(() => (snapshot ? airStateFor(snapshot.result.hourly) : null), [snapshot]);
+  const theme: AirState = air?.air ?? "idle";
+  // The sky behind the results shows the household's real (or simulated) air.
+  const resultSky = air ? sky(0.42, hazeForPm25(air.mean), 0.3) : undefined;
+  // While the simulator is on, dragging its slider re-paints the sky behind the form.
+  const formSky = form.simulate ? sky(0.4, hazeForPm25(form.simulatePeak * 0.7), 0.28) : STORY_SKY.home;
 
   useEffect(() => {
     document.documentElement.lang = form.language;
   }, [form.language]);
 
   useEffect(() => {
-    if (snapshot) resultsRef.current?.focus({ preventScroll: false });
+    if (snapshot) resultsRef.current?.focus({ preventScroll: true });
+    if (snapshot) resultsRef.current?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
   }, [snapshot]);
 
   async function run(overrides: Partial<FormState> = {}) {
@@ -95,47 +101,49 @@ export function Planner() {
 
   const announcement = busy ? t("building") : snapshot && !error ? t("planReady", snapshot.result.place) : "";
 
-  const sceneTitle = t("outsideWindow");
-  const sceneDetail = busy
-    ? t("readingAir")
-    : snapshot && sky
-      ? t("sceneDetail", snapshot.result.place.split(",")[0] ?? snapshot.result.place, BAND_LABEL[form.language][sky.air], Math.round(sky.peak))
-      : t("sceneIdle");
-
   return (
-    <div className="app" data-air={air}>
+    <div className="app" data-air={theme}>
+      <Sky />
       <a className="skip" href="#plan">
         {t("skip")}
       </a>
 
-      <header className="hero">
-        <div className="wrap hero-grid">
-          <div className="hero-text">
-            <p className="brand">
-              <span className="breath" aria-hidden="true" />
-              Saans <span lang="hi">साँस</span>
-            </p>
-            <h1>{t("tagline")}</h1>
-            <p className="lede">{t("intro")}</p>
-            <a className="cta" href="#household">
-              {t("heroCta")}
-            </a>
-            <ul className="points">
-              <li>{t("heroPoint1")}</li>
-              <li>{t("heroPoint2")}</li>
-              <li>{t("heroPoint3")}</li>
-            </ul>
-          </div>
-          <AirScene air={air} pm25={sky?.mean ?? null} busy={busy} title={sceneTitle} detail={sceneDetail} />
-        </div>
+      <header className="topbar">
+        <p className="brand">
+          <span className="breath" aria-hidden="true" />
+          Saans <span lang="hi">साँस</span>
+        </p>
+        <ChipGroup
+          legend={t("language")}
+          hideLegend
+          value={form.language}
+          onChange={(v) => setForm((f) => ({ ...f, language: v }))}
+          options={[
+            { value: "en", label: "English" },
+            { value: "hi", label: "हिन्दी" },
+          ]}
+        />
       </header>
 
-      <main className="wrap flow" id="main">
-        <section id="household" className="household">
+      <main id="main">
+        <section className="hero" data-sky={STORY_SKY.hero} aria-labelledby="hero-title">
+          <h1 id="hero-title">{t("tagline")}</h1>
+          <p className="lede">{t("intro")}</p>
+          <a className="btn primary cta" href="#household">
+            {t("heroCta")}
+          </a>
+          <p className="scroll-hint">
+            <Icon name="arrowDown" size={16} /> {t("scrollHint")}
+          </p>
+        </section>
+
+        <Story t={t} />
+
+        <section id="household" className="household" data-sky={formSky}>
           <HouseholdForm t={t} form={form} setForm={setForm} busy={busy} onSubmit={() => void run()} />
         </section>
 
-        <div id="plan" className="plan-area">
+        <div id="plan" className="plan-area" data-sky={resultSky}>
           <div className="sr-only" role="status" aria-live="polite">
             {announcement}
           </div>
@@ -163,25 +171,42 @@ export function Planner() {
 
           {snapshot && (
             <div className={busy ? "results stale" : "results"} aria-busy={busy}>
-              <ResultBanner t={t} lang={form.language} result={snapshot.result} headingRef={resultsRef} />
-              <ForecastView
-                t={t}
-                lang={form.language}
-                result={snapshot.result}
-                busy={busy}
-                selectedDay={snapshot.dayOffset}
-                onPickDay={(offset) => void run({ dayOffset: offset })}
-              />
-              <div className="duo">
-                <PlanView t={t} planLang={snapshot.lang} result={snapshot.result} />
-                <LedgerPanel key={snapshot.id} t={t} result={snapshot.result} profile={snapshot.profile} />
+              <div className="print-only report-head">
+                <p>
+                  {t("reportTitle")}: {snapshot.result.place}, {dayLabel(snapshot.result.date, form.language)}
+                </p>
+              </div>
+              <NowHeader t={t} lang={form.language} result={snapshot.result} headingRef={resultsRef} />
+              <div className="grid">
+                <HourlyCard t={t} lang={form.language} result={snapshot.result} />
+                <AqiCard t={t} lang={form.language} result={snapshot.result} />
+                <DaysCard
+                  t={t}
+                  lang={form.language}
+                  result={snapshot.result}
+                  busy={busy}
+                  selected={snapshot.dayOffset}
+                  onPick={(offset) => void run({ dayOffset: offset })}
+                />
+              </div>
+              <div className="cols">
+                <div className="col">
+                  <PlanCard t={t} planLang={snapshot.lang} result={snapshot.result} />
+                  <LedgerPanel key={snapshot.id} t={t} result={snapshot.result} profile={snapshot.profile} />
+                </div>
+                <div className="col">
+                  <IndoorCard t={t} planLang={snapshot.lang} result={snapshot.result} />
+                  <SwapsCard t={t} planLang={snapshot.lang} result={snapshot.result} />
+                  <CommunityCard t={t} planLang={snapshot.lang} result={snapshot.result} />
+                  <ShareCard t={t} lang={form.language} result={snapshot.result} />
+                </div>
               </div>
             </div>
           )}
         </div>
       </main>
 
-      <footer className="wrap foot">
+      <footer className="foot">
         <p>{t("privacy")}</p>
         <p>{t("disclaimer")}</p>
         <p>{t("attribution")}</p>

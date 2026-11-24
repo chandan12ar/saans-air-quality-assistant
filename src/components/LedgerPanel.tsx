@@ -23,6 +23,7 @@ import { contextFor } from "@/lib/context";
 import type { PlanResponse } from "@/lib/planTypes";
 import type { Profile } from "@/lib/schemas";
 import type { StringKey, Translate } from "./i18n";
+import { Icon } from "./Icon";
 
 const n = (v: number) => Math.round(v).toLocaleString("en-IN");
 
@@ -99,8 +100,10 @@ export function LedgerPanel({ t, result, profile }: Props) {
     });
 
   return (
-    <section className="panel" aria-labelledby="ledger-title">
-      <h2 id="ledger-title">{t("ledgerTitle")}</h2>
+    <section className="card ledger-card" aria-labelledby="ledger-title">
+      <h3 className="card-title" id="ledger-title">
+        <Icon name="scale" /> {t("ledgerTitle")}
+      </h3>
       <p>{t("ledgerIntro")}</p>
 
       <RangeBar label={t("baseline")} range={live.baselineUg} max={max} />
@@ -110,7 +113,7 @@ export function LedgerPanel({ t, result, profile }: Props) {
         {live.nothingToDo || r.high < 1 ? t("headlineNone") : t("headline", Math.max(0, Math.round(r.low)), Math.round(r.high), Math.round(r.central))}
       </p>
 
-      <h3>{t("whatIf")}</h3>
+      <h4>{t("whatIf")}</h4>
       <p className="hint">{t("whatIfHelp")}</p>
       <ul className="whatif">
         {recommended.map((a) => (

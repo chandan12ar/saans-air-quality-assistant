@@ -34,7 +34,7 @@ test.describe("accessibility (axe, WCAG 2.2 AA + best practice)", () => {
 
   test("results: forecast, plan and exposure ledger", async ({ page }) => {
     await buildSimulatedPlan(page);
-    await expect(page.getByRole("heading", { name: "Before and after: your exposure ledger" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Before and after" })).toBeVisible();
     await expectNoViolations(page, "results");
   });
 
@@ -54,7 +54,7 @@ test.describe("accessibility (axe, WCAG 2.2 AA + best practice)", () => {
 
   test("Hindi interface", async ({ page }) => {
     await page.goto("/");
-    await page.getByLabel("Language").selectOption("hi");
+    await page.getByRole("radio", { name: "हिन्दी" }).check();
     await expect(page.locator("html")).toHaveAttribute("lang", "hi");
     await expectNoViolations(page, "hindi home");
   });

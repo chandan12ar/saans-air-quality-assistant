@@ -15,7 +15,13 @@ Saans turns live air-quality data into a day plan for a specific household, then
 | Tailored to location and lifestyle | Place search or geolocation drives a live 3-day PM2.5 forecast; commute, windows, purifier, budget, routine change the plan | `src/lib/airQuality.ts`, `src/lib/context.ts`, `src/lib/planService.ts` | `tests/airQuality.test.ts`, `tests/planService.test.ts` |
 | Clearly explaining the direct impact of choices | **Exposure ledger**: baseline vs planned day with ranges, per-action contribution, instant what-if toggles, and an assumptions table tagged "assumption" or "sourced" | `src/engine/ledger.ts`, `src/components/LedgerPanel.tsx` | `tests/engine.test.ts`, `tests/planValidation.test.ts` |
 
-Winter smog hits the Indo-Gangetic Plain hardest, so the demo personas are a Delhi family with an asthmatic child and an elderly couple in Lucknow. English and Hindi are supported end to end.
+Winter smog hits the Indo-Gangetic Plain hardest, so the demo personas are a Delhi family with an asthmatic child and a retired couple in Lucknow. English and Hindi are supported end to end. Families can send the plan to their building group or school on WhatsApp (a plain `wa.me` share link, nothing stored) or save it as a one-page PDF report.
+
+## The experience
+
+- **A live sky** (`src/components/Sky.tsx`): a WebGL fragment shader draws the sun, clouds, a distant skyline, smog banks and drifting dust behind the whole page. Any section declares the sky it wants with `data-sky="sun,haze,cloud"`, and the sky interpolates between sections as you scroll: a clean sunrise, WHO's 15 µg/m³, India's 60 µg/m³ standard, then CPCB "Severe", where the sun turns into a dim red disc and the skyline disappears. After a plan, the sky shows the household's real (or simulated) air. It is decorative (`aria-hidden`), falls back to a CSS gradient without WebGL, lowers its resolution and then stops drifting on slow devices, and freezes with reduced motion.
+- **A short form** of tap-to-choose chips and switches instead of number boxes. Plain-language choices map to engine inputs, and these mappings are assumptions: purifier none, small or large = 0, 150 or 350 m³/h CADR; commute under 5, 5 to 15 or over 15 km = 3, 10 or 20 km one way; the main room is 30 m³.
+- **Results as frosted-glass cards**: the day's CPCB AQI estimate as a large number, an hourly PM2.5 strip in CPCB colours, a 3-day outlook, the AI plan with engine impact chips, the before/after ledger with what-if switches, and share or save.
 
 ## How it works
 

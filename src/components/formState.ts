@@ -1,4 +1,4 @@
-import type { Language } from "@/lib/labels";
+﻿import type { Language } from "@/lib/labels";
 import type { PlanRequest, Profile } from "@/lib/schemas";
 
 export interface PlaceChoice {
@@ -24,7 +24,7 @@ export const DEFAULT_PROFILE: Profile = {
   purifierCadr: 0,
   roomVolumeM3: 30,
   commuteMode: "metro",
-  commuteKm: 8,
+  commuteKm: 10,
   awayDuringDay: true,
   outdoorActivity: "none",
   windowsOpenHabit: false,
@@ -72,7 +72,7 @@ export const PRESETS: Preset[] = [
       purifierCadr: 0,
       roomVolumeM3: 30,
       commuteMode: "two_wheeler",
-      commuteKm: 8,
+      commuteKm: 10,
       awayDuringDay: true,
       outdoorActivity: "evening",
       windowsOpenHabit: true,
@@ -86,10 +86,10 @@ export const PRESETS: Preset[] = [
       ageBand: "older",
       hasRespiratoryCondition: false,
       windows: "typical",
-      purifierCadr: 250,
+      purifierCadr: 350,
       roomVolumeM3: 25,
       commuteMode: "walk",
-      commuteKm: 1,
+      commuteKm: 3,
       awayDuringDay: false,
       outdoorActivity: "morning",
       windowsOpenHabit: true,

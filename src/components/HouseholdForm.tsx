@@ -1,10 +1,10 @@
 "use client";
 
-import { useId, type ReactNode } from "react";
-import type { Language } from "@/lib/labels";
+import { useId } from "react";
 import type { Profile } from "@/lib/schemas";
+import { ChipGroup, Toggle } from "./Choice";
 import { PRESETS, type FormState } from "./formState";
-import type { StringKey, Translate } from "./i18n";
+import type { Translate } from "./i18n";
 import { PlaceSearch } from "./PlaceSearch";
 
 interface Props {
@@ -15,100 +15,15 @@ interface Props {
   busy: boolean;
 }
 
-function Field({ label, children, help }: { label: string; children: (id: string) => ReactNode; help?: string }) {
-  const id = useId();
-  return (
-    <div className="field">
-      <label htmlFor={id}>{label}</label>
-      {children(id)}
-      {help && <p className="hint">{help}</p>}
-    </div>
-  );
-}
+type PurifierSize = "none" | "small" | "large";
+type Distance = "short" | "mid" | "long";
 
-function SelectField<V extends string>({
-  t,
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  t: Translate;
-  label: string;
-  value: V;
-  options: ReadonlyArray<{ value: V; key: StringKey }>;
-  onChange: (value: V) => void;
-}) {
-  return (
-    <Field label={label}>
-      {(id) => (
-        <select id={id} value={value} onChange={(e) => onChange(options.find((o) => o.value === e.target.value)?.value ?? value)}>
-          {options.map((o) => (
-            <option key={o.value} value={o.value}>
-              {t(o.key)}
-            </option>
-          ))}
-        </select>
-      )}
-    </Field>
-  );
-}
+/** Plain-language choices mapped to the engine's numbers. The mappings are assumptions, stated in the README. */
+const PURIFIER_CADR: Record<PurifierSize, number> = { none: 0, small: 150, large: 350 };
+const DISTANCE_KM: Record<Distance, number> = { short: 3, mid: 10, long: 20 };
 
-function CheckField({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
-  const id = useId();
-  return (
-    <div className="check">
-      <input id={id} type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-      <label htmlFor={id}>{label}</label>
-    </div>
-  );
-}
-
-function NumberField({
-  label,
-  value,
-  min,
-  max,
-  step = 1,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step?: number;
-  onChange: (n: number) => void;
-}) {
-  return (
-    <Field label={label}>
-      {(id) => (
-        <input
-          id={id}
-          type="number"
-          inputMode="decimal"
-          value={Number.isFinite(value) ? value : ""}
-          min={min}
-          max={max}
-          step={step}
-          onChange={(e) => onChange(e.target.value === "" ? Number.NaN : Number(e.target.value))}
-        />
-      )}
-    </Field>
-  );
-}
-
-/** One question block: a short heading and note on the left, the controls on the right. */
-function Row({ title, note, children }: { title: string; note: string; children: ReactNode }) {
-  return (
-    <div className="row">
-      <div className="row-intro">
-        <h3>{title}</h3>
-        <p>{note}</p>
-      </div>
-      <div className="row-body">{children}</div>
-    </div>
-  );
-}
+const purifierOf = (cadr: number): PurifierSize => (cadr <= 0 ? "none" : cadr <= 200 ? "small" : "large");
+const distanceOf = (km: number): Distance => (km < 5 ? "short" : km <= 15 ? "mid" : "long");
 
 export function HouseholdForm({ t, form, setForm, onSubmit, busy }: Props) {
   const notesId = useId();
@@ -119,156 +34,152 @@ export function HouseholdForm({ t, form, setForm, onSubmit, busy }: Props) {
 
   return (
     <form
-      className="sheet"
+      className="card form-card"
       aria-labelledby="household-title"
       onSubmit={(e) => {
         e.preventDefault();
         onSubmit();
       }}
     >
-      <div className="sheet-head">
+      <div className="form-head">
         <h2 id="household-title">{t("householdTitle")}</h2>
         <div className="examples">
-          <span>{t("loadExample")}:</span>
+          <span>{t("loadExample")}</span>
           {PRESETS.map((preset) => (
-            <button
-              key={preset.id}
-              type="button"
-              className="pill"
-              onClick={() => setForm((f) => ({ ...f, place: preset.place, profile: preset.profile }))}
-            >
+            <button key={preset.id} type="button" className="pill" onClick={() => setForm((f) => ({ ...f, place: preset.place, profile: preset.profile }))}>
               {preset.id === "delhi" ? t("exDelhi") : t("exLucknow")}
             </button>
           ))}
         </div>
       </div>
 
-      <Row title={t("placeTitle")} note={t("secPlaceNote")}>
-        <PlaceSearch t={t} place={form.place} onPick={(place) => setForm((f) => ({ ...f, place }))} />
-        <div className="grid2">
-          <Field label={t("language")}>
-            {(id) => (
-              <select id={id} value={form.language} onChange={(e) => setForm((f) => ({ ...f, language: e.target.value as Language }))}>
-                <option value="en">English</option>
-                <option value="hi">हिन्दी</option>
-              </select>
-            )}
-          </Field>
-          <Field label={t("day")}>
-            {(id) => (
-              <select
-                id={id}
-                value={form.dayOffset}
-                onChange={(e) => setForm((f) => ({ ...f, dayOffset: Number(e.target.value) as FormState["dayOffset"] }))}
-              >
-                <option value={0}>{t("day0")}</option>
-                <option value={1}>{t("day1")}</option>
-                <option value={2}>{t("day2")}</option>
-              </select>
-            )}
-          </Field>
+      <div className="form-grid">
+        <div className="form-sec">
+          <h3>{t("placeTitle")}</h3>
+          <PlaceSearch t={t} place={form.place} onPick={(place) => setForm((f) => ({ ...f, place }))} />
+          <ChipGroup
+            legend={t("day")}
+            value={String(form.dayOffset) as "0" | "1" | "2"}
+            onChange={(v) => setForm((f) => ({ ...f, dayOffset: Number(v) as FormState["dayOffset"] }))}
+            options={[
+              { value: "0", label: t("day0") },
+              { value: "1", label: t("day1") },
+              { value: "2", label: t("day2") },
+            ]}
+          />
         </div>
-      </Row>
 
-      <Row title={t("who")} note={t("secWhoNote")}>
-        <SelectField
-          t={t}
-          label={t("ageBand")}
-          value={p.ageBand}
-          onChange={(v) => setProfile("ageBand", v)}
-          options={[
-            { value: "child", key: "age_child" },
-            { value: "adult", key: "age_adult" },
-            { value: "older", key: "age_older" },
-          ]}
-        />
-        <CheckField label={t("respiratory")} checked={p.hasRespiratoryCondition} onChange={(v) => setProfile("hasRespiratoryCondition", v)} />
-      </Row>
-
-      <Row title={t("homeTitle")} note={t("secHomeNote")}>
-        <SelectField
-          t={t}
-          label={t("windows")}
-          value={p.windows}
-          onChange={(v) => setProfile("windows", v)}
-          options={[
-            { value: "tight", key: "win_tight" },
-            { value: "typical", key: "win_typical" },
-            { value: "leaky", key: "win_leaky" },
-          ]}
-        />
-        <CheckField label={t("windowsOpen")} checked={p.windowsOpenHabit} onChange={(v) => setProfile("windowsOpenHabit", v)} />
-        <div className="grid2">
-          <NumberField label={t("purifier")} value={p.purifierCadr} min={0} max={2000} onChange={(v) => setProfile("purifierCadr", v)} />
-          <NumberField label={t("room")} value={p.roomVolumeM3} min={5} max={200} onChange={(v) => setProfile("roomVolumeM3", v)} />
+        <div className="form-sec">
+          <h3>{t("familyTitle")}</h3>
+          <ChipGroup
+            legend={t("who")}
+            value={p.ageBand}
+            onChange={(v) => setProfile("ageBand", v)}
+            options={[
+              { value: "child", label: t("age_child") },
+              { value: "adult", label: t("age_adult") },
+              { value: "older", label: t("age_older") },
+            ]}
+          />
+          <Toggle label={t("respiratory")} checked={p.hasRespiratoryCondition} onChange={(v) => setProfile("hasRespiratoryCondition", v)} />
         </div>
-      </Row>
 
-      <Row title={t("routineTitle")} note={t("secRoutineNote")}>
-        <div className="grid2">
-          <SelectField
-            t={t}
-            label={t("commuteMode")}
+        <div className="form-sec">
+          <h3>{t("homeTitle")}</h3>
+          <ChipGroup
+            legend={t("windows")}
+            value={p.windows}
+            onChange={(v) => setProfile("windows", v)}
+            options={[
+              { value: "tight", label: t("win_tight") },
+              { value: "typical", label: t("win_typical") },
+              { value: "leaky", label: t("win_leaky") },
+            ]}
+          />
+          <Toggle label={t("windowsOpen")} checked={p.windowsOpenHabit} onChange={(v) => setProfile("windowsOpenHabit", v)} />
+          <ChipGroup
+            legend={t("purifier")}
+            value={purifierOf(p.purifierCadr)}
+            onChange={(v) => setProfile("purifierCadr", PURIFIER_CADR[v])}
+            hint={t("purHint")}
+            options={[
+              { value: "none", label: t("pur_none") },
+              { value: "small", label: t("pur_small") },
+              { value: "large", label: t("pur_large") },
+            ]}
+          />
+        </div>
+
+        <div className="form-sec">
+          <h3>{t("routineTitle")}</h3>
+          <ChipGroup
+            legend={t("commuteMode")}
             value={p.commuteMode}
             onChange={(v) => setProfile("commuteMode", v)}
             options={[
-              { value: "walk", key: "mode_walk" },
-              { value: "two_wheeler", key: "mode_two_wheeler" },
-              { value: "bus", key: "mode_bus" },
-              { value: "metro", key: "mode_metro" },
-              { value: "car_closed", key: "mode_car_closed" },
+              { value: "walk", label: t("mode_walk") },
+              { value: "two_wheeler", label: t("mode_two_wheeler") },
+              { value: "bus", label: t("mode_bus") },
+              { value: "metro", label: t("mode_metro") },
+              { value: "car_closed", label: t("mode_car_closed") },
             ]}
           />
-          <NumberField label={t("commuteKm")} value={p.commuteKm} min={0} max={100} step={0.5} onChange={(v) => setProfile("commuteKm", v)} />
-        </div>
-        <CheckField label={t("away")} checked={p.awayDuringDay} onChange={(v) => setProfile("awayDuringDay", v)} />
-        <div className="grid2">
-          <SelectField
-            t={t}
-            label={t("outdoor")}
+          <ChipGroup
+            legend={t("distance")}
+            value={distanceOf(p.commuteKm)}
+            onChange={(v) => setProfile("commuteKm", DISTANCE_KM[v])}
+            options={[
+              { value: "short", label: t("dist_short") },
+              { value: "mid", label: t("dist_mid") },
+              { value: "long", label: t("dist_long") },
+            ]}
+          />
+          <Toggle label={t("away")} checked={p.awayDuringDay} onChange={(v) => setProfile("awayDuringDay", v)} />
+          <ChipGroup
+            legend={t("outdoor")}
             value={p.outdoorActivity}
             onChange={(v) => setProfile("outdoorActivity", v)}
             options={[
-              { value: "morning", key: "out_morning" },
-              { value: "evening", key: "out_evening" },
-              { value: "none", key: "out_none" },
+              { value: "morning", label: t("out_morning") },
+              { value: "evening", label: t("out_evening") },
+              { value: "none", label: t("out_none") },
             ]}
           />
-          <SelectField
-            t={t}
-            label={t("budget")}
+          <ChipGroup
+            legend={t("budget")}
             value={p.budget}
             onChange={(v) => setProfile("budget", v)}
             options={[
-              { value: "low", key: "bud_low" },
-              { value: "medium", key: "bud_medium" },
-              { value: "high", key: "bud_high" },
+              { value: "low", label: t("bud_low") },
+              { value: "medium", label: t("bud_medium") },
+              { value: "high", label: t("bud_high") },
             ]}
           />
         </div>
-      </Row>
+      </div>
 
-      <Row title={t("notes")} note={t("secNotesNote")}>
-        <div className="field">
-          <label htmlFor={notesId} className="sr-only">
-            {t("notes")}
-          </label>
-          <textarea
-            id={notesId}
-            rows={3}
-            maxLength={300}
-            value={form.notes}
-            aria-describedby={`${notesId}-help`}
-            onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-          />
-          <p id={`${notesId}-help`} className="hint">
-            {t("notesHelp")} ({form.notes.length}/300)
-          </p>
-        </div>
-      </Row>
+      <details className="more" open={form.notes.length > 0 || undefined}>
+        <summary>{t("notes")}</summary>
+        <label htmlFor={notesId} className="sr-only">
+          {t("notes")}
+        </label>
+        <textarea
+          id={notesId}
+          rows={3}
+          maxLength={300}
+          value={form.notes}
+          aria-describedby={`${notesId}-help`}
+          onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+        />
+        <p id={`${notesId}-help`} className="hint">
+          {t("notesHelp")} ({form.notes.length}/300)
+        </p>
+      </details>
 
-      <Row title={t("simulateTitle")} note={t("simulateHelp")}>
-        <CheckField label={t("simulate")} checked={form.simulate} onChange={(v) => setForm((f) => ({ ...f, simulate: v }))} />
+      <div className="sim">
+        <h3>{t("simulateTitle")}</h3>
+        <p className="hint">{t("simulateHelp")}</p>
+        <Toggle label={t("simulate")} checked={form.simulate} onChange={(v) => setForm((f) => ({ ...f, simulate: v }))} />
         {form.simulate && (
           <div className="field">
             <label htmlFor={peakId}>
@@ -286,7 +197,7 @@ export function HouseholdForm({ t, form, setForm, onSubmit, busy }: Props) {
             />
           </div>
         )}
-      </Row>
+      </div>
 
       <div className="submit-row">
         <button type="submit" className="btn primary" disabled={busy} aria-busy={busy}>

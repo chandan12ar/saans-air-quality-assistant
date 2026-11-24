@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Hanken_Grotesk, Noto_Sans_Devanagari } from "next/font/google";
+import { Albert_Sans, Figtree, Noto_Sans_Devanagari } from "next/font/google";
 import "./globals.css";
 
 // Self-hosted at build time by next/font, so the strict CSP (font-src 'self') still holds.
-const display = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-display", display: "swap" });
-const body = Hanken_Grotesk({ subsets: ["latin"], variable: "--font-body", display: "swap" });
+const display = Albert_Sans({ subsets: ["latin"], variable: "--font-display", display: "swap" });
+const body = Figtree({ subsets: ["latin"], variable: "--font-body", display: "swap" });
 const deva = Noto_Sans_Devanagari({ subsets: ["devanagari"], variable: "--font-deva", display: "swap" });
 
 export const metadata: Metadata = {
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#11292e",
+  themeColor: "#0d1b2e",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

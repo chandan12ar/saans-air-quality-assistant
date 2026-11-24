@@ -105,7 +105,7 @@ export function PlaceSearch({ t, place, onPick }: Props) {
         {message}
       </p>
       {results.length > 0 && (
-        <ul className="results">
+        <ul className="place-results">
           {results.map((r) => (
             <li key={`${r.lat},${r.lon},${r.label}`}>
               <button

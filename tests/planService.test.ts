@@ -11,6 +11,10 @@ describe("buildPlan", () => {
     expect(res.meta).toMatchObject({ aiUsed: true, source: "open-meteo", simulated: false, cached: false, model: "primary-model" });
     expect(res.hourly).toHaveLength(24);
     expect(res.days).toHaveLength(3);
+    for (const d of res.days) {
+      expect(d.minPm25).toBeLessThanOrEqual(d.meanPm25);
+      expect(d.meanPm25).toBeLessThanOrEqual(d.maxPm25);
+    }
     expect(res.ledger.reductionPct.central).toBeGreaterThan(0);
     expect(res.ledger.reductionPct.low).toBeLessThanOrEqual(res.ledger.reductionPct.central);
     expect(res.ledger.reductionPct.high).toBeGreaterThanOrEqual(res.ledger.reductionPct.central);
