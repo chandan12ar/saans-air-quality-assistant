@@ -97,6 +97,19 @@ function NumberField({
   );
 }
 
+/** One question block: a short heading and note on the left, the controls on the right. */
+function Row({ title, note, children }: { title: string; note: string; children: ReactNode }) {
+  return (
+    <div className="row">
+      <div className="row-intro">
+        <h3>{title}</h3>
+        <p>{note}</p>
+      </div>
+      <div className="row-body">{children}</div>
+    </div>
+  );
+}
+
 export function HouseholdForm({ t, form, setForm, onSubmit, busy }: Props) {
   const notesId = useId();
   const peakId = useId();
@@ -106,57 +119,58 @@ export function HouseholdForm({ t, form, setForm, onSubmit, busy }: Props) {
 
   return (
     <form
-      className="panel form"
+      className="sheet"
       aria-labelledby="household-title"
       onSubmit={(e) => {
         e.preventDefault();
         onSubmit();
       }}
     >
-      <h2 id="household-title">{t("householdTitle")}</h2>
-
-      <div className="examples">
-        <span>{t("loadExample")}:</span>
-        {PRESETS.map((preset) => (
-          <button
-            key={preset.id}
-            type="button"
-            className="btn link"
-            onClick={() => setForm((f) => ({ ...f, place: preset.place, profile: preset.profile }))}
-          >
-            {preset.id === "delhi" ? t("exDelhi") : t("exLucknow")}
-          </button>
-        ))}
-      </div>
-
-      <PlaceSearch t={t} place={form.place} onPick={(place) => setForm((f) => ({ ...f, place }))} />
-
-      <div className="grid2">
-        <Field label={t("language")}>
-          {(id) => (
-            <select id={id} value={form.language} onChange={(e) => setForm((f) => ({ ...f, language: e.target.value as Language }))}>
-              <option value="en">English</option>
-              <option value="hi">हिन्दी</option>
-            </select>
-          )}
-        </Field>
-        <Field label={t("day")}>
-          {(id) => (
-            <select
-              id={id}
-              value={form.dayOffset}
-              onChange={(e) => setForm((f) => ({ ...f, dayOffset: Number(e.target.value) as FormState["dayOffset"] }))}
+      <div className="sheet-head">
+        <h2 id="household-title">{t("householdTitle")}</h2>
+        <div className="examples">
+          <span>{t("loadExample")}:</span>
+          {PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              className="pill"
+              onClick={() => setForm((f) => ({ ...f, place: preset.place, profile: preset.profile }))}
             >
-              <option value={0}>{t("day0")}</option>
-              <option value={1}>{t("day1")}</option>
-              <option value={2}>{t("day2")}</option>
-            </select>
-          )}
-        </Field>
+              {preset.id === "delhi" ? t("exDelhi") : t("exLucknow")}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <fieldset className="group">
-        <legend>{t("who")}</legend>
+      <Row title={t("placeTitle")} note={t("secPlaceNote")}>
+        <PlaceSearch t={t} place={form.place} onPick={(place) => setForm((f) => ({ ...f, place }))} />
+        <div className="grid2">
+          <Field label={t("language")}>
+            {(id) => (
+              <select id={id} value={form.language} onChange={(e) => setForm((f) => ({ ...f, language: e.target.value as Language }))}>
+                <option value="en">English</option>
+                <option value="hi">हिन्दी</option>
+              </select>
+            )}
+          </Field>
+          <Field label={t("day")}>
+            {(id) => (
+              <select
+                id={id}
+                value={form.dayOffset}
+                onChange={(e) => setForm((f) => ({ ...f, dayOffset: Number(e.target.value) as FormState["dayOffset"] }))}
+              >
+                <option value={0}>{t("day0")}</option>
+                <option value={1}>{t("day1")}</option>
+                <option value={2}>{t("day2")}</option>
+              </select>
+            )}
+          </Field>
+        </div>
+      </Row>
+
+      <Row title={t("who")} note={t("secWhoNote")}>
         <SelectField
           t={t}
           label={t("ageBand")}
@@ -169,10 +183,9 @@ export function HouseholdForm({ t, form, setForm, onSubmit, busy }: Props) {
           ]}
         />
         <CheckField label={t("respiratory")} checked={p.hasRespiratoryCondition} onChange={(v) => setProfile("hasRespiratoryCondition", v)} />
-      </fieldset>
+      </Row>
 
-      <fieldset className="group">
-        <legend>{t("homeTitle")}</legend>
+      <Row title={t("homeTitle")} note={t("secHomeNote")}>
         <SelectField
           t={t}
           label={t("windows")}
@@ -189,10 +202,9 @@ export function HouseholdForm({ t, form, setForm, onSubmit, busy }: Props) {
           <NumberField label={t("purifier")} value={p.purifierCadr} min={0} max={2000} onChange={(v) => setProfile("purifierCadr", v)} />
           <NumberField label={t("room")} value={p.roomVolumeM3} min={5} max={200} onChange={(v) => setProfile("roomVolumeM3", v)} />
         </div>
-      </fieldset>
+      </Row>
 
-      <fieldset className="group">
-        <legend>{t("routineTitle")}</legend>
+      <Row title={t("routineTitle")} note={t("secRoutineNote")}>
         <div className="grid2">
           <SelectField
             t={t}
@@ -234,27 +246,29 @@ export function HouseholdForm({ t, form, setForm, onSubmit, busy }: Props) {
             ]}
           />
         </div>
-      </fieldset>
+      </Row>
 
-      <div className="field">
-        <label htmlFor={notesId}>{t("notes")}</label>
-        <textarea
-          id={notesId}
-          rows={3}
-          maxLength={300}
-          value={form.notes}
-          aria-describedby={`${notesId}-help`}
-          onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-        />
-        <p id={`${notesId}-help`} className="hint">
-          {t("notesHelp")} ({form.notes.length}/300)
-        </p>
-      </div>
+      <Row title={t("notes")} note={t("secNotesNote")}>
+        <div className="field">
+          <label htmlFor={notesId} className="sr-only">
+            {t("notes")}
+          </label>
+          <textarea
+            id={notesId}
+            rows={3}
+            maxLength={300}
+            value={form.notes}
+            aria-describedby={`${notesId}-help`}
+            onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+          />
+          <p id={`${notesId}-help`} className="hint">
+            {t("notesHelp")} ({form.notes.length}/300)
+          </p>
+        </div>
+      </Row>
 
-      <fieldset className="group sim">
-        <legend>{t("simulateTitle")}</legend>
+      <Row title={t("simulateTitle")} note={t("simulateHelp")}>
         <CheckField label={t("simulate")} checked={form.simulate} onChange={(v) => setForm((f) => ({ ...f, simulate: v }))} />
-        <p className="hint">{t("simulateHelp")}</p>
         {form.simulate && (
           <div className="field">
             <label htmlFor={peakId}>
@@ -272,11 +286,13 @@ export function HouseholdForm({ t, form, setForm, onSubmit, busy }: Props) {
             />
           </div>
         )}
-      </fieldset>
+      </Row>
 
-      <button type="submit" className="btn primary" disabled={busy} aria-busy={busy}>
-        {busy ? t("building") : t("submit")}
-      </button>
+      <div className="submit-row">
+        <button type="submit" className="btn primary" disabled={busy} aria-busy={busy}>
+          {busy ? t("building") : t("submit")}
+        </button>
+      </div>
     </form>
   );
 }

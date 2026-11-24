@@ -1,16 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Language } from "@/lib/labels";
+import { BAND_LABEL, type Language } from "@/lib/labels";
 import type { PlanResponse } from "@/lib/planTypes";
 import { ProfileSchema, type Profile } from "@/lib/schemas";
+import { airStateFor, type AirState } from "./airTheme";
+import { AirScene } from "./AirScene";
 import { ForecastView } from "./ForecastView";
 import { HouseholdForm } from "./HouseholdForm";
 import { INITIAL_FORM, toRequest, type FormState } from "./formState";
 import { makeTranslator } from "./i18n";
 import { LedgerPanel } from "./LedgerPanel";
 import { PlanView } from "./PlanView";
-import { TraceDialog } from "./TraceDialog";
+import { ResultBanner } from "./ResultBanner";
 
 interface Snapshot {
   id: number;
@@ -37,12 +39,16 @@ export function Planner() {
   const t = useMemo(() => makeTranslator(form.language), [form.language]);
   const setForm = useCallback((updater: (prev: FormState) => FormState) => setFormState(updater), []);
 
+  // The whole page takes its colours from the air in the latest plan.
+  const sky = useMemo(() => (snapshot ? airStateFor(snapshot.result.hourly) : null), [snapshot]);
+  const air: AirState = sky?.air ?? "idle";
+
   useEffect(() => {
     document.documentElement.lang = form.language;
   }, [form.language]);
 
   useEffect(() => {
-    if (snapshot) resultsRef.current?.focus();
+    if (snapshot) resultsRef.current?.focus({ preventScroll: false });
   }, [snapshot]);
 
   async function run(overrides: Partial<FormState> = {}) {
@@ -89,34 +95,53 @@ export function Planner() {
 
   const announcement = busy ? t("building") : snapshot && !error ? t("planReady", snapshot.result.place) : "";
 
+  const sceneTitle = t("outsideWindow");
+  const sceneDetail = busy
+    ? t("readingAir")
+    : snapshot && sky
+      ? t("sceneDetail", snapshot.result.place.split(",")[0] ?? snapshot.result.place, BAND_LABEL[form.language][sky.air], Math.round(sky.peak))
+      : t("sceneIdle");
+
   return (
-    <>
+    <div className="app" data-air={air}>
       <a className="skip" href="#plan">
         {t("skip")}
       </a>
-      <header className="masthead">
-        <div className="wrap">
-          <p className="brand">
-            <span className="breath" aria-hidden="true" />
-            Saans <span className="brand-hi" lang="hi">साँस</span>
-          </p>
-          <h1>{t("tagline")}</h1>
-          <p className="lede">{t("intro")}</p>
+
+      <header className="hero">
+        <div className="wrap hero-grid">
+          <div className="hero-text">
+            <p className="brand">
+              <span className="breath" aria-hidden="true" />
+              Saans <span lang="hi">साँस</span>
+            </p>
+            <h1>{t("tagline")}</h1>
+            <p className="lede">{t("intro")}</p>
+            <a className="cta" href="#household">
+              {t("heroCta")}
+            </a>
+            <ul className="points">
+              <li>{t("heroPoint1")}</li>
+              <li>{t("heroPoint2")}</li>
+              <li>{t("heroPoint3")}</li>
+            </ul>
+          </div>
+          <AirScene air={air} pm25={sky?.mean ?? null} busy={busy} title={sceneTitle} detail={sceneDetail} />
         </div>
       </header>
 
-      <main className="wrap layout" id="main">
-        <div className="col-form">
+      <main className="wrap flow" id="main">
+        <section id="household" className="household">
           <HouseholdForm t={t} form={form} setForm={setForm} busy={busy} onSubmit={() => void run()} />
-        </div>
+        </section>
 
-        <div className="col-results" id="plan">
+        <div id="plan" className="plan-area">
           <div className="sr-only" role="status" aria-live="polite">
             {announcement}
           </div>
 
           {error && (
-            <div className="panel alert" role="alert">
+            <div className="alert" role="alert">
               <strong>{error.message}</strong>
               {error.issues.length > 0 && (
                 <ul>
@@ -129,19 +154,16 @@ export function Planner() {
           )}
 
           {busy && !snapshot && (
-            <div className="panel" aria-hidden="true">
-              <div className="skeleton" />
+            <div className="skeleton" aria-hidden="true">
+              <span />
+              <span />
+              <span />
             </div>
           )}
 
           {snapshot && (
             <div className={busy ? "results stale" : "results"} aria-busy={busy}>
-              <h2 className="results-title" tabIndex={-1} ref={resultsRef}>
-                {snapshot.result.place}
-              </h2>
-              <div className="actions">
-                <TraceDialog t={t} trace={snapshot.result.trace} />
-              </div>
+              <ResultBanner t={t} lang={form.language} result={snapshot.result} headingRef={resultsRef} />
               <ForecastView
                 t={t}
                 lang={form.language}
@@ -150,8 +172,10 @@ export function Planner() {
                 selectedDay={snapshot.dayOffset}
                 onPickDay={(offset) => void run({ dayOffset: offset })}
               />
-              <PlanView t={t} planLang={snapshot.lang} result={snapshot.result} />
-              <LedgerPanel key={snapshot.id} t={t} result={snapshot.result} profile={snapshot.profile} />
+              <div className="duo">
+                <PlanView t={t} planLang={snapshot.lang} result={snapshot.result} />
+                <LedgerPanel key={snapshot.id} t={t} result={snapshot.result} profile={snapshot.profile} />
+              </div>
             </div>
           )}
         </div>
@@ -162,6 +186,6 @@ export function Planner() {
         <p>{t("disclaimer")}</p>
         <p>{t("attribution")}</p>
       </footer>
-    </>
+    </div>
   );
 }

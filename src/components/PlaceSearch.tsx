@@ -77,8 +77,7 @@ export function PlaceSearch({ t, place, onPick }: Props) {
                 : "";
 
   return (
-    <fieldset className="group">
-      <legend>{t("placeTitle")}</legend>
+    <div className="place">
       <label htmlFor={inputId}>{t("placeSearch")}</label>
       <div className="row">
         <input
@@ -130,6 +129,6 @@ export function PlaceSearch({ t, place, onPick }: Props) {
           <strong>{place.label}</strong>
         </p>
       )}
-    </fieldset>
+    </div>
   );
 }
